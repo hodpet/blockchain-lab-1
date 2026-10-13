@@ -1,0 +1,41 @@
+[project]
+name = "txparser"
+version = "1.0.0"
+description = "Byte-level parser for raw Bitcoin transactions (Lab 01)"
+readme = "README.md"
+requires-python = ">=3.11"
+# No runtime dependencies on purpose. Everything needed to parse a Bitcoin
+# transaction is in the standard library; pulling in a library would hide
+# exactly the details this lab exists to teach.
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+# Treat this as an application, not a distributable library: uv then creates the
+# virtual environment and installs the dev dependencies without trying to build
+# and install the project itself.
+#
+# This is deliberate. An editable install writes an absolute path into a .pth
+# file, and on Windows those files are read using the system code page rather
+# than UTF-8. If any directory in the path contains a non-ASCII character --
+# and the course repository lives under "Obuda" with an accented O -- the path
+# is mangled and the package silently fails to import. A flat layout with
+# `pythonpath` sidesteps the problem entirely.
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

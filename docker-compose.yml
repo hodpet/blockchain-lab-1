@@ -1,0 +1,23 @@
+services:
+  bitcoind:
+    image: lncm/bitcoind:v27.1
+    container_name: lab01-bitcoind
+    restart: unless-stopped
+    # bitcoind reads /data/.bitcoin/bitcoin.conf by default in this image.
+    volumes:
+      - ./bitcoin.conf:/data/.bitcoin/bitcoin.conf:ro
+      - bitcoin-data:/data/.bitcoin
+    ports:
+      # RPC. Regtest default is 18443. Bound to localhost only.
+      - "127.0.0.1:18443:18443"
+      # P2P. Not needed for a single-node lab, exposed for the optional two-node exercise.
+      - "127.0.0.1:18444:18444"
+    healthcheck:
+      test: ["CMD", "bitcoin-cli", "-regtest", "-rpcuser=lab", "-rpcpassword=lab", "getblockchaininfo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  bitcoin-data:
