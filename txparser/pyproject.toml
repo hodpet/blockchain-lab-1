@@ -7,7 +7,9 @@ requires-python = ">=3.11"
 # No runtime dependencies on purpose. Everything needed to parse a Bitcoin
 # transaction is in the standard library; pulling in a library would hide
 # exactly the details this lab exists to teach.
-dependencies = []
+dependencies = [
+    "requests>=2.34.2",
+]
 
 [dependency-groups]
 dev = [

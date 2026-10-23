@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import requests
 
 from .parser import Transaction, parse_hex
 from .script import address_for, classify, disassemble
@@ -124,6 +125,11 @@ def main(argv: list[str] | None = None) -> int:
         choices=["mainnet", "testnet", "regtest"],
         help="network used for address encoding (default: regtest)",
     )
+    p.add_argument(
+        "--rpc",
+        type=str,
+        help="Bitcoin RPC URL (e.g., http://lab:lab@127.0.0.1:18443)"
+    )
     args = p.parse_args(argv)
 
     raw_hex = args.hex if args.hex else sys.stdin.read()
@@ -137,6 +143,46 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(render(tx, args.network))
+
+    # --- BONUS E1 LOGIC ---
+    if args.rpc:
+        total_input_sats = 0
+        
+        for i in tx.inputs:
+            if i.is_coinbase:
+                continue # Coinbase transactions don't spend previous outputs
+                
+            prev_txid = i.prev_txid.hex()
+            prev_vout = i.prev_vout
+            
+            payload = {
+                "jsonrpc": "1.0",
+                "id": "txparser",
+                "method": "getrawtransaction",
+                "params": [prev_txid, True]
+            }
+            
+            try:
+                response = requests.post(args.rpc, json=payload)
+                rpc_data = response.json()
+                
+                if "result" in rpc_data and rpc_data["result"]:
+                    for vout in rpc_data["result"]["vout"]:
+                        if vout["n"] == prev_vout:
+                            total_input_sats += int(vout["value"] * 100_000_000)
+                            break
+            except Exception as e:
+                print(f"RPC connection failed: {e}", file=sys.stderr)
+                return 1
+
+        fee_sats = total_input_sats - tx.total_output_sat
+        fee_rate = fee_sats / tx.vsize
+        
+        print("-" * 78)
+        print(f"fee {fee_sats} sat")
+        print(f"{fee_rate:.1f} sat/vB")
+        print("-" * 78)
+    
     return 0
 
 
